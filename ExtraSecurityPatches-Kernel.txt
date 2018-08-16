@@ -1,0 +1,2 @@
+// CVE-2017-7184 | A-33358926: xfrm_replay_verify_len
+// CVE-2016-8655 | A-33358926: Linux AF_PACKET race condition
