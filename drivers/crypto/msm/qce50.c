@@ -4226,14 +4226,23 @@ static int _qce_aead_ccm_req(void *handle, struct qce_req *q_req)
 	totallen_in = areq->cryptlen + areq->assoclen;
 	if (q_req->dir == QCE_ENCRYPT) {
 		q_req->cryptlen = areq->cryptlen;
-		out_len = areq->cryptlen + authsize;
-		hw_pad_out = ALIGN(authsize, ce_burst_size) - authsize;
+		if (q_req->mode == QCE_MODE_CCM) {
+			out_len = areq->cryptlen + authsize;
+			hw_pad_out = ALIGN(authsize, ce_burst_size) - authsize;
+		} else {
+			out_len = areq->cryptlen;
+		}
 	} else {
 		q_req->cryptlen = areq->cryptlen - authsize;
 		out_len = q_req->cryptlen;
 		hw_pad_out = authsize;
 	}
 
+	if ((q_req->cryptlen > UINT_MAX - areq->assoclen) ||
+		(q_req->cryptlen + areq->assoclen > UINT_MAX - ivsize)) {
+			pr_err("Integer overflow on total aead req length.\n");
+			return -EINVAL;
+	}
 	if (pce_dev->ce_sps.minor_version == 0) {
 		/*
 		 * For crypto 5.0 that has burst size alignment requirement
